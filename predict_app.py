@@ -71,5 +71,5 @@ if st.button('Ejecutar Monte Carlo'):
         'prob_emp': f"{t[1]/mc_runs*100:.2f}%"
     } 
     for t in top
-])))
+]))
 
