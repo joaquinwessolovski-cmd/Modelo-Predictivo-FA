@@ -49,8 +49,8 @@ pairs = [((i,j), P[i,j]) for i in range(P.shape[0]) for j in range(P.shape[1])]
 pairs_sorted = sorted(pairs, key=lambda x: -x[1])[:10]
 rows = [
     {
-        'score': f'{i}-{j}',
-        'prob': f'{p*100:.2f}%'   # formateo como porcentaje
+        'Marcador': f'{i}-{j}',
+        'Probabilidad': f'{p*100:.2f}%'   # formateo como porcentaje
     } 
     for (i,j), p in pairs_sorted[:5]
 ]
@@ -67,8 +67,8 @@ if st.button('Ejecutar Monte Carlo'):
     st.write('Top resultados (MC):')
     st.table(pd.DataFrame([
     {
-        'score': t[1],
-        'prob_emp': f"{t[1]/mc_runs*100:.2f}%"
+        'Marcador': t[1],
+        'Probabilidad': f"{t[1]/mc_runs*100:.2f}%"
     } 
     for t in top
 ]))
