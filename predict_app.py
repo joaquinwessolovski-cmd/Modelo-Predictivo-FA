@@ -5,7 +5,8 @@ import pickle
 from train_model import joint_prob_dc
 
 st.set_page_config(layout='wide')
-st.title('Dixon-Coles Poisson Predictor — Futbol Argentino')
+st.title('Predictor — Futbol Argentino')
+st.write('Modelo predictivo de resultados del futbol argentino. Se eligen los equipos local y visitante, y se muestran las probabilidades de cada resultado, y los 5 marcadores mas probables. Ademas, se puede realizar una simulacion Montecarlo para mayor precision.',size = 10)
 
 @st.cache_data
 def load_model(pkl_path):
@@ -46,7 +47,13 @@ col3.metric(f'{away} gana', f"{away_w*100:.2f}%")
 
 pairs = [((i,j), P[i,j]) for i in range(P.shape[0]) for j in range(P.shape[1])]
 pairs_sorted = sorted(pairs, key=lambda x: -x[1])[:10]
-rows = [{'score':f'{i}-{j}', 'prob':p} for (i,j),p in pairs_sorted[:5]]
+rows = [
+    {
+        'score': f'{i}-{j}',
+        'prob': f'{p*100:.2f}%'   # formateo como porcentaje
+    } 
+    for (i,j), p in pairs_sorted[:5]
+]
 st.subheader('Marcadores más probables')
 st.table(pd.DataFrame(rows))
 
@@ -58,5 +65,11 @@ if st.button('Ejecutar Monte Carlo'):
     c = Counter(sims)
     top = c.most_common(10)
     st.write('Top resultados (MC):')
-    st.table(pd.DataFrame([{'score':t[0], 'count':t[1], 'prob_emp':t[1]/mc_runs} for t in top]))
+    st.table(pd.DataFrame([
+    {
+        'score': t[1],
+        'prob_emp': f"{t[1]/mc_runs*100:.2f}%"
+    } 
+    for t in top
+])))
 
