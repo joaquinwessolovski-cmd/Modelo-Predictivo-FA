@@ -67,7 +67,7 @@ if st.button('Ejecutar Monte Carlo'):
     st.write('Top resultados (MC):')
     st.table(pd.DataFrame([
     {
-        'Marcador': t[1],
+        'Marcador': t[0],
         'Probabilidad': f"{t[1]/mc_runs*100:.2f}%"
     } 
     for t in top
