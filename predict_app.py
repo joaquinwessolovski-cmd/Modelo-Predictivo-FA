@@ -71,7 +71,7 @@ def df_to_jpg(df):
     ax.axis('off')
     ax.table(cellText=df.values, colLabels=df.columns, loc='center', cellLoc='center')
     buf = io.BytesIO()
-    plt.savefig(buf, format="jpg", bbox_inches="tight")
+    plt.savefig(buf, format="jpg", dpi = 600, bbox_inches="tight")
     buf.seek(0)
     return buf
 
@@ -178,14 +178,6 @@ elif page == "Predicción múltiple":
                 data=towrite,
                 file_name="predicciones.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-
-            # Descargar en PDF
-            st.download_button(
-                label="📄 Descargar en PDF",
-                data=df_to_pdf(results_df),
-                file_name="predicciones.pdf",
-                mime="application/pdf"
             )
 
             # Descargar en JPG
