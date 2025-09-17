@@ -5,3 +5,4 @@ openpyxl
 streamlit
 reportlab
 matplotlib
+seaborn
