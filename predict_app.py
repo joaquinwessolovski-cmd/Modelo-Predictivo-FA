@@ -8,6 +8,10 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import matplotlib.pyplot as plt
 from train_model import joint_prob_dc
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+import seaborn as sns
 
 # ================================
 # Cargar modelo entrenado
@@ -23,30 +27,52 @@ model = load_model()
 # ================================
 # Funciones auxiliares
 # ================================
-def predict_match_probs(home, away, model, max_goals=10):
+def predict_match_probs(home, away, model, max_goals=7,show_heatmap=False):
     mu_h = model['attacks'][home] * model['defenses'][away] * model['home_adv']
     mu_a = model['attacks'][away] * model['defenses'][home]
 
-    P = joint_prob_dc(mu_h, mu_a, model['rho'], max_goals=max_goals)
+    P_adj = joint_prob_dc(mu_h, mu_a, model['rho'], max_goals=max_goals)
 
     home_w = draw = away_w = 0.0
-    for i in range(P.shape[0]):
-        for j in range(P.shape[1]):
+    for i in range(P_adj.shape[0]):
+        for j in range(P_adj.shape[1]):
             if i > j:
-                home_w += P[i, j]
+                home_w += P_adj[i, j]
             elif i == j:
-                draw += P[i, j]
+                draw += P_adj[i, j]
             else:
-                away_w += P[i, j]
+                away_w += P_adj[i, j]
 
     # Top marcadores
-    pairs = [((i, j), P[i, j]) for i in range(P.shape[0]) for j in range(P.shape[1])]
+    pairs = [((i, j), P_adj[i, j]) for i in range(P_adj.shape[0]) for j in range(P_adj.shape[1])]
     pairs_sorted = sorted(pairs, key=lambda x: -x[1])[:10]
     top_scores = [
         {"score": f"{i}-{j}", "prob": f"{p*100:.2f}%"}
         for (i, j), p in pairs_sorted[:5]
     ]
-
+    if show_heatmap:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        sns.heatmap(
+            P_adj*100,
+            cmap="Greens",
+            annot=True,
+            fmt=".2f",
+            annot_kws={"size":6},
+            xticklabels=range(max_goals + 1),
+            yticklabels=range(max_goals + 1),
+            ax=ax,
+            cbar=False
+        )
+        ax.set_ylabel("Goles visitante")
+        ax.set_xlabel("Goles local")
+        ax.set_title(f"Heatmap de probabilidades: {home} vs {away}")
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=0,)
+        ax.invert_yaxis()
+        
+        st.pyplot(fig)
+        
+        
     return {
         "home": home_w,
         "draw": draw,
@@ -54,24 +80,29 @@ def predict_match_probs(home, away, model, max_goals=10):
         "top_scores": top_scores
     }
 
-def df_to_pdf(df):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    text = c.beginText(40, 750)
-    text.setFont("Helvetica", 10)
-    for line in df.to_string(index=False).split("\n"):
-        text.textLine(line)
-    c.drawText(text)
-    c.save()
-    buffer.seek(0)
-    return buffer
+def export_pdf(df):
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4)
+    data = [df.columns.tolist()] + df.values.tolist()
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.grey),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.whitesmoke),
+        ("ALIGN", (0,0), (-1,-1), "CENTER"),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.black),
+    ]))
+
+    doc.build([table])
+    buf.seek(0)
+    return buf
 
 def df_to_jpg(df):
     fig, ax = plt.subplots(figsize=(8, len(df) * 0.4 + 1))
     ax.axis('off')
     ax.table(cellText=df.values, colLabels=df.columns, loc='center', cellLoc='center')
     buf = io.BytesIO()
-    plt.savefig(buf, format="jpg", dpi = 600, bbox_inches="tight")
+    plt.savefig(buf, format="jpg", dpi=500,  bbox_inches="tight")
     buf.seek(0)
     return buf
 
@@ -124,6 +155,7 @@ elif page == "Predicción de un partido":
 
         st.subheader('Marcadores más probables')
         st.table(pd.DataFrame(res["top_scores"]))
+        res = predict_match_probs(home, away, model,show_heatmap=True)
 
 # ================================
 # Página: Predicción múltiple
@@ -180,6 +212,7 @@ elif page == "Predicción múltiple":
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
+            
             # Descargar en JPG
             st.download_button(
                 label="🖼️ Descargar en JPEG",
