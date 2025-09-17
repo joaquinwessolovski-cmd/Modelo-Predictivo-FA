@@ -4,3 +4,4 @@ scipy
 openpyxl
 streamlit
 reportlab
+matplotlib
