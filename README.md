@@ -1,0 +1,1 @@
+python3 train_model.py --matches matches.xlsx --stats stats.xlsx --out dc_model.pkl
